@@ -51,7 +51,7 @@ function! BufOnly(buffer, bang)
 							\ n '(add ! to override)'
 				echohl None
 			else
-				silent exe 'bdel' . a:bang . ' ' . n
+				silent exe 'bwipe' . a:bang . ' ' . n
 				if ! buflisted(n)
 					let delete_count = delete_count+1
 				endif
@@ -61,9 +61,9 @@ function! BufOnly(buffer, bang)
 	endwhile
 
 	if delete_count == 1
-		echomsg delete_count "buffer deleted"
+		echomsg delete_count "buffer wiped"
 	elseif delete_count > 1
-		echomsg delete_count "buffers deleted"
+		echomsg delete_count "buffers wiped"
 	endif
 
 endfunction
