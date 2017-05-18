@@ -67,3 +67,27 @@ function! BufOnly(buffer, bang)
 	endif
 
 endfunction
+
+function! s:BufDeleteFunction(...)
+    if a:0 > 0
+        let pattern = a:1
+    else
+        let pattern = expand('%:t')
+    endif
+	let last_buffer = bufnr('$')
+	let n = 1
+	while n <= last_buffer
+        if buflisted(n) && bufname(n) =~? pattern
+            if getbufvar(n, '&modified')
+                echohl ErrorMsg
+                echomsg 'No write since last change for buffer' n '(add ! to override)'
+                echohl None
+            else
+                silent exe 'bwipe ' . n
+            endif
+        endif
+		let n = n+1
+	endwhile
+endfunction
+
+command! -nargs=1 BufDelete call s:BufDeleteFunction(<f-args>)
