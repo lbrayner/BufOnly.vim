@@ -60,34 +60,62 @@ function! BufOnly(buffer, bang)
 		let n = n+1
 	endwhile
 
-	if delete_count == 1
-		echomsg delete_count "buffer wiped"
-	elseif delete_count > 1
-		echomsg delete_count "buffers wiped"
-	endif
-
+    call s:MessageBuffers(delete_count)
 endfunction
 
-function! s:BufDeleteFunction(...)
-    if a:0 > 0
-        let pattern = a:1
-    else
-        let pattern = expand('%:t')
-    endif
+function! s:MessageBuffers(buffer_count)
+	if a:buffer_count == 1
+		echomsg a:buffer_count "buffer wiped"
+	elseif a:buffer_count > 1
+		echomsg a:buffer_count "buffers wiped"
+	endif
+endfunction
+
+function! s:LoopBuffers(predicate)
 	let last_buffer = bufnr('$')
+	let delete_count = 0
 	let n = 1
 	while n <= last_buffer
-        if buflisted(n) && bufname(n) =~? pattern
+        let test_var = eval('buflisted(n) && ' . a:predicate)
+        if test_var
             if getbufvar(n, '&modified')
                 echohl ErrorMsg
                 echomsg 'No write since last change for buffer' n '(add ! to override)'
                 echohl None
             else
                 silent exe 'bwipe ' . n
+				if ! buflisted(n)
+					let delete_count = delete_count+1
+				endif
             endif
         endif
 		let n = n+1
 	endwhile
+    call s:MessageBuffers(delete_count)
 endfunction
 
-command! -nargs=1 BufDelete call s:BufDeleteFunction(<f-args>)
+let s:wipe_pattern = ''
+
+function! s:BufWipeFunction(...)
+    if a:0 > 0
+        let s:wipe_pattern = a:1
+    else
+        let s:wipe_pattern = expand('%:t')
+    endif
+    call s:LoopBuffers('bufname(n) =~? s:wipe_pattern')
+endfunction
+
+command! -nargs=1 BufWipe call s:BufWipeFunction(<f-args>)
+
+let s:tab_dic = {}
+
+function! s:BufWipeTabOnlyFunction()
+    let tab_list = tabpagebuflist()
+    let s:tab_dic = {}
+    for i in tab_list
+        exec 'let s:tab_dic.' . i . ' = ' . i
+    endfor
+    call s:LoopBuffers('!has_key(s:tab_dic,n)')
+endfunction
+
+command! BufWipeTabOnly call s:BufWipeTabOnlyFunction()
